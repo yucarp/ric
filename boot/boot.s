@@ -1,9 +1,8 @@
-.set FLAGS, 1 | 2
+.set FLAGS, (1 << 0) | (1 << 1)
 .set MAGIC, 0x1BADB002
 .set CHECKSUM, -(MAGIC + FLAGS)
 
-.section multiboot
-.align 4
+.section .multiboot
 .long MAGIC
 .long FLAGS
 .long CHECKSUM
@@ -33,7 +32,6 @@ mov $stack_top, %esp
 
 call kernel_startpoint
 
-cli
 lop: hlt
 jmp lop
 
