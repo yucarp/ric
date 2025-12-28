@@ -1,4 +1,5 @@
 #include <kernel/idt.h>
+#include <kernel/port.h>
 
 static struct IDTPointer idt_pointer;
 struct IDTEntry idt_entries[256];
@@ -40,7 +41,10 @@ void set_idt(){
     );
 }
 void isr_handler(struct x86Registers* registers){
-    if((registers->interrupt_no > 31) && (irq_entries[32 - registers->interrupt_no] != 0)){
-        irq_entries[32 - registers->interrupt_no]();
+    if((registers->interrupt_no > 31) && (irq_entries[registers->interrupt_no - 32] != 0)){
+        irq_entries[registers->interrupt_no - 32]();
+    } else if (registers->interrupt_no == 7) {
+
     }
+
 }

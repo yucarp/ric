@@ -28,7 +28,7 @@ void initialize_pic(int offset1, int offset2){
     outb(PIC1_DATA, 1);
     iowait();
 
-    outb(PIC0_DATA, 0xFD);
+    outb(PIC0_DATA, 0xFC);
     outb(PIC1_DATA, 0xFF);
 
     asm volatile ("sti");
@@ -36,6 +36,6 @@ void initialize_pic(int offset1, int offset2){
 
 void acknowledge_irq(uint8_t irq){
     if (irq >= 8){
-        outb(PIC1_DATA, 0x20);
-    } outb(PIC0_DATA, 0x20);
+        outb(PIC1_COMMAND, 0x20);
+    } outb(PIC0_COMMAND, 0x20);
 }

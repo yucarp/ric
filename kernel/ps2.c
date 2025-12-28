@@ -10,7 +10,7 @@
 
 void ps2_handler(){
     uint8_t key = inb(PS2_DATA);
-    *(char *)(0xB8000) = (char) key;
+    *(char *)(0xB8000) = key;
     acknowledge_irq(1);
 }
 
@@ -45,12 +45,14 @@ int initialize_ps2(){
         status = inb(PS2_DATA);
         wait_ps2();
 
-        status |= 0b01010010;
+        status |= 0b01010011;
 
         outb(PS2_COMMAND, 0x60);
         wait_ps2();
         outb(PS2_DATA, status);
         wait_ps2();
+
+        outb(PS2_COMMAND, 0xAE);
 
         set_irq_function(1, &ps2_handler);
         return 0;

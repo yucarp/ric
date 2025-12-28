@@ -2,6 +2,7 @@
 .set MAGIC, 0x1BADB002
 .set CHECKSUM, -(MAGIC + FLAGS)
 
+.align 4
 .section .multiboot
 .long MAGIC
 .long FLAGS
@@ -15,9 +16,14 @@ stack_top:
 
 .section .text
 
+.extern multiboot_pointer
+
 .global _startpoint
 .type _startpoint, @function
 _startpoint:
+
+mov $multiboot_pointer, %edx
+mov %ebx, (%edx)
 
 lgdt gdtr
 ljmp $0x08,$_longjump
@@ -30,6 +36,43 @@ mov %ax, %ss
 
 mov $stack_top, %esp
 
+.extern page_directory
+.extern page_table
+
+mov $1024, %ecx
+mov $2, %ebx
+mov $page_directory, %edi
+
+set_directory:
+    mov %ebx, (%edi)
+    add $4, %edi
+    loop set_directory
+
+mov $1024, %ecx
+mov $5, %ebx
+mov $page_table, %edi
+
+set_table:
+    mov %ebx, (%edi)
+    add $4, %edi
+    add $0x1000, %ebx
+    loop set_table
+
+mov $page_directory, %edi
+mov $page_table, (%edi)
+orl $3, (%edi)
+
+movl %edi, %eax
+mov %eax, %cr3
+
+or $0x80000001, %eax
+mov %eax, %cr0
+
+mov $stack_top, %esp
+
+jmp final
+
+final:
 call kernel_startpoint
 
 lop: hlt
