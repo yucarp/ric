@@ -18,6 +18,7 @@ kernel/pic.o \
 kernel/pit.o \
 kernel/port.o \
 kernel/ps2.o \
+kernel/task.o \
 
 .SUFFIXES: .o .c .s .so
 

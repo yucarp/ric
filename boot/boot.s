@@ -34,8 +34,6 @@ mov $0x10, %ax
 mov %ax, %ds
 mov %ax, %ss
 
-mov $stack_top, %esp
-
 .extern page_directory
 .extern page_table
 

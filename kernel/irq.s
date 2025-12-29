@@ -81,13 +81,39 @@ IRQ 15, 47
 .global isr_common
 isr_common:
     pushal
-	pushl %esp
-
+	push %esp
 	cld
     call isr_handler
 
-    popl %esp
+    pop %esp
     popal
-
     add $8, %esp
     iretl
+
+.global save_context
+save_context:
+	push %eax
+	push %ecx
+	push %edx
+	push %ebx
+	push %ebp
+	push %esi
+	push %edi
+
+	mov %esp, %edi
+
+	push %edi
+
+.global restore_context
+restore_context:
+	pop %edi
+
+	mov %edi, %esp
+
+	pop %edi
+	pop %esi
+	pop %ebp
+	pop %ebx
+	pop %edx
+	pop %ecx
+	pop %eax
