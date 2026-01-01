@@ -11,12 +11,24 @@
 
 void *kernel_symbols[2];
 
+struct Task Task0  = {0, 0, 0, 0, 0, 0};
+struct Task Task1 = {0, 0, 0, 0, 0, 0};
+struct Task Task2 = {0, 0, 0, 0, 0, 0};
+
 void task1(){
-      *(char *)(0xB8040) = '1';
+      unsigned int i = 1;
+      while(i){
+            *(char *)(0xB8050) = (i % 10) + 48;
+            i++;
+            if(i == 0) i = 1;
+      }
 }
 
 void task2(){
-   *(char *)(0xB8042) = '2';
+      unsigned int i = 1;
+      while(i){
+            *(char *)(0xB8052) = (i % 10) + 48;
+      }
 }
 
 void kernel_startpoint(){
@@ -28,13 +40,9 @@ void kernel_startpoint(){
    kernel_symbols[0] = load_symbol((void *) module->mod_start);
    void (*kprintf)(char*) = kernel_symbols[0];
    kprintf(" This is LYRIC 0.0.1.");
-   struct Task Task1 = {0, 0, 0, 0, 0, 0, 0, 0, 0};
-   struct Task Task2 = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+   Task1.eip = (uint32_t) &task1;
+   Task2.eip = (uint32_t) &task2;
    initialize_task(&Task1);
    initialize_task(&Task2);
-   Task1.point = &task1;
-   Task2.point = &task2;
-   switch_task(Task1, Task2);
-   //switch_task(Task2, Task1);
    while (1) {asm("hlt");}
 }

@@ -1,9 +1,9 @@
 #include <stdint.h>
 
 struct Task {
-    void (*point) (void);
-    uint32_t esp, edi, esi, ebp, ebx, edx, ecx, eax;
-};
+    uint32_t eip, ebp, edi, esi, ebx, esp;
+} __attribute__((packed));
 
-void switch_task(struct Task previous, struct Task next);
+extern void switch_task(struct Task *old_task, struct Task *new_task);
 void initialize_task(struct Task *task);
+void schedule();

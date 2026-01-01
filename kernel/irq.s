@@ -78,6 +78,9 @@ IRQ 15, 47
 .extern isr_handler
 .type isr_handler, @function
 
+.extern next_task
+.type next_task, @function
+
 .global isr_common
 isr_common:
     pushal
@@ -90,30 +93,22 @@ isr_common:
     add $8, %esp
     iretl
 
-.global save_context
-save_context:
-	push %eax
-	push %ecx
-	push %edx
+.global switch_task
+switch_task:
+	mov 4(%esp), %eax
+	mov 8(%esp), %ecx
+
 	push %ebx
-	push %ebp
+	push %edi
 	push %esi
-	push %edi
+	push %ebp
 
-	mov %esp, %edi
+	mov %esp, 20(%eax)
+	mov 20(%ecx), %esp
 
-	push %edi
-
-.global restore_context
-restore_context:
-	pop %edi
-
-	mov %edi, %esp
-
-	pop %edi
-	pop %esi
 	pop %ebp
+	pop %esi
+	pop %edi
 	pop %ebx
-	pop %edx
-	pop %ecx
-	pop %eax
+
+	ret

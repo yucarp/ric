@@ -47,7 +47,7 @@ set_directory:
     loop set_directory
 
 mov $1024, %ecx
-mov $5, %ebx
+mov $3, %ebx
 mov $page_table, %edi
 
 set_table:

@@ -1,22 +1,32 @@
 #include <kernel/mmu.h>
 #include <kernel/task.h>
 
-extern void restore_context(struct Task);
-extern void save_context(struct Task);
-
 int task_number = 0;
+int current_task = 0;
+struct Task *tasks[128] = {0};
+
 void initialize_task(struct Task *task){
+    allocate_page(0x1000000 + (task_number - 1) * 0x1000, 0x1000000 + (task_number - 1 )* 0x1000);
     allocate_page(0x1000000 + task_number * 0x1000, 0x1000000 + task_number * 0x1000);
-    task->esp = 0x1000000 + task_number * 0x1000;
+    task->esp = (0x1000000 + task_number * 0x1000);
+    uint32_t *pesp = (uint32_t *) task->esp;
+    *--pesp = task->eip;
+    *--pesp = task->ebx;
+    *--pesp = task->esi;
+    *--pesp = task->edi;
+    *--pesp = task->ebp;
+    task->esp = (uint32_t) pesp;
+    tasks[task_number] = task;
     task_number++;
 }
 
-void switch_task(struct Task previous, struct Task next){
-    save_context(previous);
-    *(char *)(0xB8060)='s';
-    asm volatile("mov $4, %eax");
-    //while (1) {asm("hlt");}
-    restore_context(next);
-    *(char *)(0xB8060)='r';
-    ((void(*)(void))(next.point))();
+void schedule(){
+    if(current_task + 1 > task_number){
+        switch_task(tasks[current_task], tasks[0]);
+        current_task = 0;
+    }
+    *(char *)(0xB8060) = 'a';
+    switch_task(tasks[current_task], tasks[current_task + 1]);
+    *(char *)(0xB8062) = 'b';
+    ++current_task;
 }
