@@ -18,6 +18,7 @@ struct MemoryNode *last_node;
 void allocate_new_node(int size){
      if(last_available_address == 0){ last_available_address = kernel_end; }
      struct MemoryNode new_memory_node = {last_node, size, last_available_address, NULL};
+     if (last_node) last_node->next = &new_memory_node;
      last_node = &new_memory_node;
      last_available_address += 4 * size;
 }

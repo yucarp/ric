@@ -12,6 +12,7 @@
 .align 16
 stack_bottom:
 .skip 16384
+.global stack_top
 stack_top:
 
 .section .text
@@ -38,7 +39,7 @@ mov %ax, %ss
 .extern page_table
 
 mov $1024, %ecx
-mov $2, %ebx
+mov $7, %ebx
 mov $page_directory, %edi
 
 set_directory:
@@ -77,10 +78,12 @@ lop: hlt
 jmp lop
 
 .align 4
+.global gdtr
 gdtr:
     .word gdt_end - gdt_base
     .long gdt_base
 
+.global gdt_base
 gdt_base:
     .quad 0
 
@@ -97,4 +100,20 @@ gdt_base:
     .byte 0x92
     .byte 0xCF
     .byte 0
+
+    .word 0xFFFF
+    .word 0
+    .byte 0
+    .byte 0xFA
+    .byte 0xCF
+    .byte 0
+
+    .word 0xFFFF
+    .word 0
+    .byte 0
+    .byte 0xF2
+    .byte 0xCF
+    .byte 0
+
+    .quad 0
 gdt_end:

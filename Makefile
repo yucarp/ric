@@ -1,6 +1,9 @@
 AS := i686-elf-as
 CC := i686-elf-gcc
-CFLAGS := -O2 -ffreestanding -Wall -Wextra -Iinclude
+CFLAGS := -ffreestanding -Wall -Wextra -Iinclude
+
+FILEOBJS=\
+fs/vfs.o
 
 TERMOBJS=\
 drivers/terminal/terminal.so
@@ -19,6 +22,7 @@ kernel/pit.o \
 kernel/port.o \
 kernel/ps2.o \
 kernel/task.o \
+kernel/tss.o \
 
 .SUFFIXES: .o .c .s .so
 
@@ -31,7 +35,10 @@ kernel/task.o \
 .s.o:
 	$(AS) -MD -c $< -o $@
 
-all: kernel.bin terminal.so
+all: kernel.bin terminal.so fs.bin
+
+fs.bin: $(FILEOBJS)
+	$(CC) -T fs/linker.ld -o $@ -O2 -ffreestanding -nostdlib -lgcc $(FILEOBJS)
 
 kernel.bin: $(OBJS)
 	$(CC) -T linker.ld -o $@ -O2 -ffreestanding -nostdlib -lgcc $(OBJS)

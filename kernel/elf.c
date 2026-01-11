@@ -3,8 +3,7 @@
 #include <stdlib.h>
 #include <stddef.h>
 
-int loaded_programs = 0;
-int loaded_modules = 0;
+int loaded_pages = 0;
 
 //TODO: Move this to a common place
 void * memcpy(void * restrict dest, const void * restrict src, size_t n) {
@@ -17,13 +16,12 @@ struct ElfHeader *parse_header(void *header_place){
     return (struct ElfHeader *) header_place;
 }
 
-void *load_symbol(void* file_start){
+void *load_symbol(void* file_start, int index){
     struct ElfHeader *header = parse_header(file_start);
     void *symbol = 0;
 
     //Check the header to see if it's ELF'
     if (header->magic != 0x464C457F) {
-        *((char *)(0xB8008)) = 'N';
         return NULL;
     }
 
@@ -34,7 +32,7 @@ void *load_symbol(void* file_start){
         //Copy PROGBITS sections to memory
         if (sheader->type == 1) {
             for(int i = 0; i < sheader->size; i += 0x1000){
-                allocate_page(sheader->address, 0x0600000 + loaded_modules * 0x10000);
+                allocate_page(sheader->address + i, 0x0600000 + i);
             }
             memcpy((void *)sheader->address, (void *)(file_start + sheader->offset), sheader->size);
         }
@@ -42,7 +40,7 @@ void *load_symbol(void* file_start){
         //Set up NOBITS
         if (sheader->type == 8) {
             for(int i = 0; i < sheader->size; i += 0x1000){
-                allocate_page(sheader->address, 0x0500000 + loaded_modules * 0x10000);
+                allocate_page(sheader->address + i, 0x0500000 + i);
             }
         }
 
@@ -55,8 +53,9 @@ void *load_symbol(void* file_start){
         struct ElfSymbol *sym_table = (struct ElfSymbol *) sheader->address;
 
         for(int j = 0; j < sheader->size / sizeof(struct ElfSymbol) + 1; ++j){
-            if(((sym_table[j].info & 0xf) == 2)){ //Return if a function
-                symbol = (void *)sym_table[j].value;
+            if(((sym_table[j].info & 0xf) == 2)){
+                if(!index) symbol = (void *)sym_table[j].value;
+                else --index;
             }
         }
     }
@@ -77,11 +76,9 @@ void *load_symbol(void* file_start){
 
                 switch(table[rel].info){
                     case 10:
-                        *((char *) + (0xB8000)) = 'O';
                         *((uint32_t *)target) = sym_table[table[rel].info].value + table[rel].addend;
                     break;
                     case 2:
-                        *((char *) + (0xB8000)) = 'P';
                         *((uint32_t *)target) = sym_table[table[rel].info].value + table[rel].addend - target;
                     break;
                 }
@@ -92,26 +89,23 @@ void *load_symbol(void* file_start){
     return symbol;
 }
 
-void load_program(void *file_start){
+void *load_program(void *file_start){
     struct ElfHeader *header = parse_header(file_start);
 
     if (header->magic != 0x464C457F) {
-        *((char *)(0xB8008)) = 'N';
-        return ;
+        return NULL;
     }
 
     for(int i = 0; i < header->prtaennu; ++i){
         struct ProgramHeader *pheader = (struct ProgramHeader *)(file_start + header->program_header + i * header->prtaensi);
         if(pheader->type == 1){
             for(int i = 0; i < pheader->memory_size; i += 0x1000){
-                allocate_page(pheader->virtual_addr, 0x0300000 + loaded_programs * 0x10000);
+                allocate_page(pheader->virtual_addr + i, 0x0300000 + i);
             }
             memcpy((void *)pheader->virtual_addr, (void *)(file_start + pheader->offset), pheader->memory_size);
 
         }
     }
 
-
-    int (*entry) (void) = (int (*)(void))(header->program_entry);
-    entry();
+    return (void *) header->program_entry;
 }

@@ -67,5 +67,5 @@ struct ElfRela {
     uint16_t addend;
 };
 
-void load_program(void *file_start);
-void * load_symbol(void *file_start);
+void *load_program(void *file_start);
+void *load_symbol(void *file_start, int index);

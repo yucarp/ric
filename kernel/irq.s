@@ -78,8 +78,10 @@ IRQ 15, 47
 .extern isr_handler
 .type isr_handler, @function
 
-.extern next_task
-.type next_task, @function
+.extern initialize_stack
+.type initialize_stack, @function
+
+.extern syscall_handler
 
 .global isr_common
 isr_common:
@@ -93,15 +95,37 @@ isr_common:
     add $8, %esp
     iretl
 
+.global system_call
+system_call:
+	push %ds
+	push %es
+	push %fs
+	push %gs
+	push $0
+	push $0
+	pushal
+	push %esp
+	call syscall_handler
+
+	pop %esp
+	popal
+	add $8, %esp
+	pop %gs
+	pop %fs
+	pop %es
+	pop %ds
+	iretl
+
 .global switch_task
 switch_task:
 	mov 4(%esp), %eax
 	mov 8(%esp), %ecx
 
+	push (%eax) #EIP
 	push %ebx
-	push %edi
-	push %esi
-	push %ebp
+    push %edi
+    push %esi
+    push %ebp
 
 	mov %esp, 20(%eax)
 	mov 20(%ecx), %esp
@@ -110,5 +134,23 @@ switch_task:
 	pop %esi
 	pop %edi
 	pop %ebx
-
+	sti
 	ret
+
+.global enter_user
+enter_user:
+	mov 4(%esp), %edx
+
+	mov $35, %ax
+	mov %ax, %ds
+	mov %ax, %es
+	mov %ax, %fs
+	mov %ax, %gs
+
+	mov %esp, %eax
+	push $35
+	push %eax
+	pushf
+	push $27
+	push %edx
+	iret
