@@ -5,11 +5,11 @@
 
 unsigned int ticks = 0;
 
-void pit_handler(){
+struct x86Registers *pit_handler(struct x86Registers *registers){
     ++ticks;
-    *(char *)(0xB8000) = ticks % 10 + 0x30;
+    *(char *)(0xB80A0) = ticks % 10 + 0x30;
     acknowledge_irq(0);
-    schedule();
+    schedule(registers->eip);
 }
 
 void initialize_pit(){

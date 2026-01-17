@@ -1,11 +1,13 @@
+#include <stdlib.h>
 #include <kernel/idt.h>
 #include <kernel/port.h>
 #include <kernel/task.h>
 
 static struct IDTPointer idt_pointer;
 struct IDTEntry idt_entries[256];
-static void (*irq_entries[16]) (void);
-static int (*syscall_functions[16]) (void *, void *) = {get_current_process_id, (int (*)(void *, void *))send_message, (int (*)(void *, void *))recieve_message};
+static void (*irq_entries[16]) (struct x86Registers*);
+static int (*syscall_functions[16]) (void *, void *) = {get_current_process_id, (int (*)(void *, void *))send_message, (int (*)(void *, void *))recieve_message,
+    (int (*)(void *, void *))recieve_any_message, (int (*)(void *, void *))malloc};
 void idt_set_gate(uint8_t n, void* handler, uint16_t selector, uint8_t attributes){
     idt_entries[n].offset_low = ((uint32_t)handler & 0xFFFF);
     idt_entries[n].offset_high = (((uint32_t)handler >> 16) & 0xFFFF);
@@ -46,14 +48,14 @@ void set_idt(){
 
 void isr_handler(struct x86Registers* registers){
     if((registers->interrupt_no > 31) && (irq_entries[registers->interrupt_no - 32] != 0)){
-        irq_entries[registers->interrupt_no - 32]();
+        irq_entries[registers->interrupt_no - 32](registers);
     } else if (registers->interrupt_no < 0xf) {
         while (1) asm ("hlt");
     }
 
 }
 
-void syscall_handler(struct x86Registers *registers){
+void syscall_handler(struct x86Registers* registers){
     if(syscall_functions[registers->eax] == 0) return;
     registers->eax = syscall_functions[registers->eax]((void *) registers->edi, (void *) registers->esi);
 }

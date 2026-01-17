@@ -7,7 +7,7 @@ inline void outb(uint16_t port, uint8_t value){
 
 inline uint8_t inb(uint16_t port){
     uint8_t value = 0;
-    asm volatile("inb %w1, %b0" :: "a"(value), "Nd"(port) : "memory");
+    asm volatile("inb %w1, %b0" : "=a"(value) : "Nd"(port) : "memory");
     return value;
 }
 

@@ -31,16 +31,16 @@ void *load_symbol(void* file_start, int index){
 
         //Copy PROGBITS sections to memory
         if (sheader->type == 1) {
-            for(int i = 0; i < sheader->size; i += 0x1000){
-                allocate_page(sheader->address + i, 0x0600000 + i);
+            for(int j = 0; j < sheader->size; j += 0x1000){
+                allocate_page(sheader->address + j, 0x0600000 + j);
             }
             memcpy((void *)sheader->address, (void *)(file_start + sheader->offset), sheader->size);
         }
 
         //Set up NOBITS
         if (sheader->type == 8) {
-            for(int i = 0; i < sheader->size; i += 0x1000){
-                allocate_page(sheader->address + i, 0x0500000 + i);
+            for(int j = 0; j < sheader->size; j += 0x1000){
+                allocate_page(sheader->address + j, 0x0500000 + j);
             }
         }
 
@@ -48,8 +48,6 @@ void *load_symbol(void* file_start, int index){
         else if(sheader->type != 2) continue;
 
         sheader->address = ((uint32_t)file_start + sheader->offset);
-        struct SectionHeader *string_table = (file_start + header->section_header + header->setaensi * sheader->link);
-        char *symbol_names = (char *)string_table->address;
         struct ElfSymbol *sym_table = (struct ElfSymbol *) sheader->address;
 
         for(int j = 0; j < sheader->size / sizeof(struct ElfSymbol) + 1; ++j){
@@ -91,7 +89,7 @@ void *load_symbol(void* file_start, int index){
 
 void *load_program(void *file_start){
     struct ElfHeader *header = parse_header(file_start);
-
+    int loaded_pages = 0;
     if (header->magic != 0x464C457F) {
         return NULL;
     }
@@ -99,10 +97,12 @@ void *load_program(void *file_start){
     for(int i = 0; i < header->prtaennu; ++i){
         struct ProgramHeader *pheader = (struct ProgramHeader *)(file_start + header->program_header + i * header->prtaensi);
         if(pheader->type == 1){
-            for(int i = 0; i < pheader->memory_size; i += 0x1000){
-                allocate_page(pheader->virtual_addr + i, 0x0300000 + i);
+            for(int j = 0; j < pheader->memory_size; j += 0x1000){
+                allocate_page(pheader->virtual_addr + j, 0x0300000 + j + loaded_pages * 0x1000);
+                loaded_pages++;
             }
-            memcpy((void *)pheader->virtual_addr, (void *)(file_start + pheader->offset), pheader->memory_size);
+
+            memcpy((void *)pheader->virtual_addr, (void *)(file_start + pheader->offset), pheader->file_size);
 
         }
     }

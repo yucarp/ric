@@ -89,31 +89,21 @@ isr_common:
 	push %esp
 	cld
     call isr_handler
-
-    pop %esp
+	add $4, %esp
     popal
     add $8, %esp
     iretl
 
 .global system_call
 system_call:
-	push %ds
-	push %es
-	push %fs
-	push %gs
 	push $0
 	push $0
 	pushal
 	push %esp
 	call syscall_handler
-
-	pop %esp
+	add $4, %esp
 	popal
 	add $8, %esp
-	pop %gs
-	pop %fs
-	pop %es
-	pop %ds
 	iretl
 
 .global switch_task

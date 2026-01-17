@@ -2,6 +2,8 @@
 #include <kernel/task.h>
 #include <stdlib.h>
 
+extern void switch_task(struct Task *old_task, struct Task *new_task);
+
 struct ProcessList {
     struct Process *process;
     struct ProcessList *next;
@@ -43,13 +45,11 @@ void initialize_process(struct Task *task){
         return;
     }
 
-
-
+    pl->next = first_task;
     main_task->next = pl;
     main_task = pl;
-    main_task->next = first_task;
 
-    pl->process->id = task_number;
+    main_task->process->id = task_number;
     task_number++;
 }
 
@@ -69,9 +69,8 @@ void send_message(int reciever_id, void *message){
     msg->reciever_id = reciever_id;
     msg->content = message;
 
-    for(; pl->process->message_queue[i] != 0; ++i){
+    for(; pl->process->message_queue[i] != 0; ++i){     if (i >= 16) return;
     }
-
     pl->process->message_queue[i] = msg;
 }
 
@@ -84,18 +83,48 @@ struct Message *recieve_message(int sender_id){
     }
 
     int i = 0;
-    for(; pl->process->message_queue[i]->sender_id != sender_id; ++i) {if (!pl->process->message_queue[i]){ return 0;}};
-    if (pl->process->message_queue[i] != 0) {
-        struct Message *msg = pl->process->message_queue[i];
-        for(int j = 0; j < 15; ++j){
-            pl->process->message_queue[j] = pl->process->message_queue[j + 1];
-        }
-        return msg;
-    } else {return 0;}
+
+    if(!pl->process->message_queue) return 0;
+    if(!pl->process->message_queue[0]) return 0;
+    for(; i <= 16; ++i){
+        if(!pl->process->message_queue[i]) continue;
+        if(pl->process->message_queue[i]->sender_id == sender_id) break;
+    }
+
+    struct Message *msg = pl->process->message_queue[i];
+    for(int j = 0; j < 15; ++j){
+        pl->process->message_queue[j] = pl->process->message_queue[j + 1];
+    }
+    pl->process->message_queue[15] = 0
+    ;
+    return msg;
 }
 
-void schedule(){
+struct Message *recieve_any_message(){
+    int cid = get_current_process_id();
+    struct ProcessList *pl = first_task;
+
+    while(pl->process->id != cid){
+        pl = pl->next;
+        if(pl->next == first_task) break;
+    }
+
+    if(!pl->process->message_queue) return 0;
+    if(!pl->process->message_queue[0]) return 0;
+
+    struct Message *msg = pl->process->message_queue[0];
+
+    for(int j = 0; j < 16; ++j){
+        pl->process->message_queue[j] = pl->process->message_queue[j + 1];
+    }
+
+    pl->process->message_queue[15] = 0;
+    return msg;
+}
+
+void schedule(uintptr_t eip){
     prev_task = main_task;
     main_task = main_task->next;
+    prev_task->process->task->eip = eip;
     switch_task(prev_task->process->task, main_task->process->task);
 }

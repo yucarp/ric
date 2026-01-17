@@ -11,43 +11,47 @@
 #include <kernel/tss.h>
 
 void *kernel_symbols[2];
+char* ps2_buffer;
+
 int i = 0;
-struct Task Task0  = {0, 0, 0, 0, 0, 0};
-struct Task Task1 = {0, 0, 0, 0, 0, 0};
-struct Task Task2 = {0, 0, 0, 0, 0, 0};
-struct File file = {0, "Hello world!"};
-void task0(){
-      while (1) asm("hlt");
-}
+struct File *file = 0;
+struct Message *file_message = 0;
 
 void task1(){
-      send_message(2, (void *) 2);
-      send_message(2, (void *) 3);
+      int i = 0;
       while (1) {
-            struct Message *f = recieve_message(2);
-            if (f) *(char *)(0xB8090 + (int) f->content * 2) = (int)f->content + 0x30;
+            struct Message *m = recieve_message(1);
+            if (m) *(char *)(0xB8090) = (int) m->content + 0x30;
       }
 }
 
 void task2(){
-      int h = 0;
-      send_message(1, (void *) 3);
-      send_message(1, (void *) &file);
+
+      send_message(0, (void *) 4);
+      send_message(0, (void *) "ps2");
+      send_message(0, (void *) ps2_buffer);
+      send_message(0, (void *) 3);
+      send_message(0, (void *) "ps2");
+
       while(1){
-            struct Message *f = recieve_message(1);
-            if (f){
-                  *(char *)(0xB8080 + h * 2) = (int)f->content;
-                  *(char *)(0xB8070) = h + 0x30;
-            }
+            file_message = recieve_message(0);
+            i = 1;
+            if(file_message) {file = (struct File *) file_message->content; break;}
       }
-      asm("hlt");
+
+
+      while (1) {
+            send_message(0, (void *) 1);
+            send_message(0, (void *) file);
+            struct Message *message = 0;
+            while(!message){message = recieve_message(0);}
+            *(char *)(0xB8090) = (int) message->content;
+      }
 }
 
 void kernel_startpoint(){
    set_idt();
    initalize_tss();
-   initialize_ps2();
-   initialize_pit();
    initialize_pic(0x20, 0x28);
 
    struct MultibootModule *terminal_module = (struct MultibootModule *) get_module(0);
@@ -57,11 +61,19 @@ void kernel_startpoint(){
    void (*kprintf)(char*) = kernel_symbols[0];
    kprintf(" This is LYRIC 0.0.1.");
 
-   Task0.eip = (uint32_t) &task0;
-   Task1.eip = (uint32_t) vfs_entry;
-   Task2.eip = (uint32_t) &task2;
-   initialize_process(&Task0);
-   initialize_process(&Task1);
-   initialize_process(&Task2);
-   while (1) {asm("hlt");}
+   struct Task *Task1 = malloc(sizeof(struct Task));
+   struct Task *Task2 = malloc(sizeof(struct Task));
+   struct Task *Kernel_Task = malloc(sizeof(struct Task));
+   ps2_buffer = malloc(64);
+   Task1->eip = (uint32_t) vfs_entry;
+   Task2->eip = (uint32_t) &task2;
+
+   initialize_process(Task1);
+   initialize_process(Task2);
+   initialize_process(Kernel_Task);
+
+   initialize_ps2();
+   initialize_pit();
+
+   while(1) asm("hlt");
 }

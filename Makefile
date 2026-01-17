@@ -1,9 +1,10 @@
 AS := i686-elf-as
 CC := i686-elf-gcc
-CFLAGS := -ffreestanding -Wall -Wextra -Iinclude
+CFLAGS := -ffreestanding -Wall -Wextra -Iinclude -g
 
 FILEOBJS=\
-fs/vfs.o
+fs/vfs.o \
+fs/syscall.o
 
 TERMOBJS=\
 drivers/terminal/terminal.so
