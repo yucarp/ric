@@ -39,14 +39,15 @@ void task2(){
             if(file_message) {file = (struct File *) file_message->content; break;}
       }
 
+      send_message(0, (void *) 1);
+      send_message(0, (void *) file);
 
-      while (1) {
-            send_message(0, (void *) 1);
-            send_message(0, (void *) file);
-            struct Message *message = 0;
-            while(!message){message = recieve_message(0);}
-            *(char *)(0xB8090) = (int) message->content;
-      }
+      struct Message *message = 0;
+      while(!message){message = recieve_message(0);}
+      *(char *)(0xB8090) = (int) message->content;
+
+      while(1){asm("hlt");};
+
 }
 
 void kernel_startpoint(){
